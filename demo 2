@@ -1,0 +1,1441 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowRight,
+  Bot,
+  Calendar,
+  Check,
+  ChevronDown,
+  ClipboardCopy,
+  Clock,
+  FileText,
+  Globe,
+  Layers,
+  Mail,
+  MessageCircle,
+  Phone,
+  Shield,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+
+/**
+ * Vanguard Automation Group — Demo Website
+ * - Single-file React component
+ * - Tailwind + shadcn/ui
+ * - Includes interactive "demo" (chat simulator + automation blueprint)
+ * - Replace BOOKING_URL + CTA_EMAIL + BRAND_NAME as needed
+ */
+
+const BRAND_NAME = "Vanguard Automation Group";
+const TAGLINE = "Automation that captures leads, books appointments, and follows up — 24/7.";
+const SUBTAGLINE =
+  "Productized automations (SMS, email, booking, CRM) delivered fast — starting at $250.";
+
+const BOOKING_URL = "#"; // e.g., Calendly link
+const CTA_EMAIL = "hello@vanguardai.example";
+
+const industries = [
+  {
+    key: "home",
+    name: "Home Services",
+    example: "HVAC • Plumbing • Roofing",
+    outcomes: [
+      "Instant quote capture + scheduling",
+      "Missed-call text back in 10s",
+      "Review + referral requests",
+    ],
+  },
+  {
+    key: "health",
+    name: "Health & Wellness",
+    example: "Chiro • PT • MedSpa",
+    outcomes: [
+      "Insurance / new-patient intake",
+      "Appointment reminders + reschedules",
+      "Reactivation for no-shows",
+    ],
+  },
+  {
+    key: "legal",
+    name: "Legal",
+    example: "PI • Family • Immigration",
+    outcomes: [
+      "Lead qualification + routing",
+      "Case intake + document collection",
+      "Consult booking + confirmations",
+    ],
+  },
+  {
+    key: "realestate",
+    name: "Real Estate",
+    example: "Agents • Property Mgmt",
+    outcomes: [
+      "Buyer/seller funnel + nurture",
+      "Showing requests + scheduling",
+      "Listing inquiries + follow-ups",
+    ],
+  },
+  {
+    key: "ecom",
+    name: "E-commerce",
+    example: "Brands • DTC",
+    outcomes: [
+      "Order status + FAQs",
+      "Abandoned cart recovery",
+      "Returns / exchanges automation",
+    ],
+  },
+];
+
+const packages = [
+  {
+    name: "Launch",
+    price: "$250",
+    period: "one-time",
+    subtitle: "One automation, live in 48 hours",
+    bullets: [
+      "1 workflow (choose one: missed-call textback OR lead form → email/SMS)",
+      "Basic lead capture (name + phone + need)",
+      "Simple booking link handoff",
+      "Setup + testing",
+      "1 revision",
+    ],
+    cta: "Get Launch",
+  },
+  {
+    name: "Growth",
+    price: "$500",
+    period: "one-time",
+    subtitle: "Follow-up engine + booking",
+    featured: true,
+    bullets: [
+      "Up to 3 workflows (SMS + email)",
+      "Lead qualification questions + routing",
+      "Calendar booking + confirmations",
+      "CRM handoff payload (copy/paste or webhook-ready)",
+      "2 revisions",
+    ],
+    cta: "Get Growth",
+  },
+  {
+    name: "Scale",
+    price: "$1,000",
+    period: "one-time",
+    subtitle: "Full system with SOPs + analytics",
+    bullets: [
+      "Up to 6 workflows (multi-step sequences)",
+      "Pipeline stages + lead scoring logic",
+      "Reminders + reschedule + no-show recovery",
+      "Basic analytics (counts, conversion, response time)",
+      "Documentation + handoff SOP",
+      "3 revisions",
+    ],
+    cta: "Get Scale",
+  },
+];
+
+const faqs = [
+  {
+    q: "How fast can we launch?",
+    a: "Most clients go live in 5–7 days once we have your assets and access (website, calendar, email/CRM).",
+  },
+  {
+    q: "Do I need a new website?",
+    a: "No. We can embed a Vanguard AI widget on your current site or deploy a lightweight landing page in parallel.",
+  },
+  {
+    q: "Will this replace my staff?",
+    a: "It replaces repetitive steps — capturing leads, follow-up, reminders — and hands off qualified leads to your team.",
+  },
+  {
+    q: "Is my data safe?",
+    a: "We use least-privilege access, audit logs, and can configure retention rules. We also support redaction for transcripts.",
+  },
+];
+
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function useCopyToClipboard(timeoutMs = 1200) {
+  const [copied, setCopied] = useState(false);
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), timeoutMs);
+    } catch {
+      // no-op
+    }
+  };
+  return { copied, copy };
+}
+
+function Glow() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -top-24 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full blur-3xl opacity-30 bg-gradient-to-r from-white/30 via-white/10 to-white/30" />
+      <div className="absolute top-40 right-[-120px] h-[320px] w-[320px] rounded-full blur-3xl opacity-20 bg-white" />
+      <div className="absolute bottom-[-140px] left-[-140px] h-[360px] w-[360px] rounded-full blur-3xl opacity-15 bg-white" />
+    </div>
+  );
+}
+
+function TopNav({ onScrollTo }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="sticky top-0 z-50 border-b border-white/10 bg-black/40 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 border border-white/10">
+            <Zap className="h-5 w-5" />
+          </div>
+          <div className="leading-tight">
+            <div className="text-sm font-semibold tracking-wide">{BRAND_NAME}</div>
+            <div className="text-[11px] text-white/70">Automation Studio</div>
+          </div>
+        </div>
+
+        <div className="hidden items-center gap-2 md:flex">
+          {[
+            ["How it works", "how"],
+            ["Demo", "demo"],
+            ["Pricing", "pricing"],
+            ["Partners", "partners"],
+            ["FAQ", "faq"],
+          ].map(([label, id]) => (
+            <Button
+              key={id}
+              variant="ghost"
+              className="text-white/80 hover:text-white"
+              onClick={() => onScrollTo(id)}
+            >
+              {label}
+            </Button>
+          ))}
+          <Button
+            className="rounded-2xl"
+            onClick={() => onScrollTo("cta")}
+          >
+            Book a demo <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="md:hidden">
+          <Button
+            variant="ghost"
+            className="rounded-2xl"
+            onClick={() => setOpen((v) => !v)}
+          >
+            Menu <ChevronDown className={cn("ml-2 h-4 w-4 transition", open && "rotate-180")} />
+          </Button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden border-t border-white/10"
+          >
+            <div className="mx-auto max-w-6xl px-4 py-3 grid gap-2">
+              {[
+                ["How it works", "how"],
+                ["Demo", "demo"],
+                ["Pricing", "pricing"],
+                ["Partners", "partners"],
+                ["FAQ", "faq"],
+                ["Book a demo", "cta"],
+              ].map(([label, id]) => (
+                <Button
+                  key={id}
+                  variant={id === "cta" ? "default" : "ghost"}
+                  className={cn("justify-between rounded-2xl", id !== "cta" && "text-white/85")}
+                  onClick={() => {
+                    setOpen(false);
+                    onScrollTo(id);
+                  }}
+                >
+                  {label} <ArrowRight className="h-4 w-4" />
+                </Button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function Hero({ onScrollTo }) {
+  return (
+    <section className="relative overflow-hidden">
+      <Glow />
+      <div className="mx-auto max-w-6xl px-4 py-16 md:py-24">
+        <div className="grid gap-10 md:grid-cols-12 md:items-center">
+          <div className="md:col-span-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
+              <Sparkles className="h-4 w-4" />
+              <span>Demo site • Lead capture • Booking • Follow-up</span>
+            </div>
+            <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
+              {TAGLINE}
+            </h1>
+            <p className="mt-4 text-base text-white/75 md:text-lg max-w-2xl">
+              {SUBTAGLINE}
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Button className="rounded-2xl" onClick={() => onScrollTo("demo")}
+              >
+                Try the demo <MessageCircle className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                className="rounded-2xl"
+                onClick={() => onScrollTo("cta")}
+              >
+                Book a call <Calendar className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                className="rounded-2xl text-white/85"
+                onClick={() => onScrollTo("how")}
+              >
+                See how it works <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {["Capture", "Qualify", "Book", "Follow-up"].map((t) => (
+                <div
+                  key={t}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-3"
+                >
+                  <div className="text-xs text-white/70">Outcome</div>
+                  <div className="mt-1 font-medium">{t}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:col-span-5">
+            <Card className="rounded-3xl border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5" /> Live Demo Widget
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3">
+                <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                  <div className="text-xs text-white/70">Simulated results</div>
+                  <div className="mt-2 grid gap-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-white/80">Avg. response time</span>
+                      <span className="font-medium">10s</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-white/80">Booked appointments</span>
+                      <span className="font-medium">+18%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-white/80">No-shows</span>
+                      <span className="font-medium">-22%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">What you get</div>
+                      <div className="text-xs text-white/70">
+                        A complete follow-up engine, not just a chatbot.
+                      </div>
+                    </div>
+                    <Badge className="rounded-full" variant="secondary">
+                      Done-for-you
+                    </Badge>
+                  </div>
+                  <ul className="mt-3 grid gap-2 text-sm text-white/80">
+                    {[
+                      "Website embed + landing page",
+                      "SMS + email + CRM workflows",
+                      "Booking + reminders",
+                      "Transcripts + handoff",
+                    ].map((b) => (
+                      <li key={b} className="flex items-center gap-2">
+                        <Check className="h-4 w-4" /> {b}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  const steps = useMemo(
+    () => [
+      {
+        icon: Globe,
+        title: "Install",
+        body: "We embed Vanguard AI on your website (or ship a landing page).",
+      },
+      {
+        icon: Layers,
+        title: "Connect",
+        body: "Calendar, email/SMS, CRM — we wire the automations end-to-end.",
+      },
+      {
+        icon: Shield,
+        title: "Train",
+        body: "We build FAQs + guardrails so the AI stays on-brand and accurate.",
+      },
+      {
+        icon: Zap,
+        title: "Launch",
+        body: "Go live, monitor, and optimize workflows based on real lead data.",
+      },
+    ],
+    []
+  );
+
+  return (
+    <section id="how" className="mx-auto max-w-6xl px-4 py-16">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-white/60">How it works</div>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+            From website visit → booked appointment
+          </h2>
+        </div>
+        <div className="hidden md:flex items-center gap-2 text-sm text-white/70">
+          <Clock className="h-4 w-4" /> Typically live in 5–7 days
+        </div>
+      </div>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-4">
+        {steps.map((s) => (
+          <Card key={s.title} className="rounded-3xl border-white/10 bg-white/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <s.icon className="h-5 w-5" /> {s.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-white/75">{s.body}</CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6">
+        <div className="grid gap-6 md:grid-cols-12 md:items-center">
+          <div className="md:col-span-7">
+            <div className="text-sm font-medium">What we automate (common stack)</div>
+            <p className="mt-1 text-sm text-white/70">
+              Website → AI qualify → SMS/email follow-up → calendar booking → CRM pipeline → reminders → review request.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Web chat", "SMS", "Email", "Calendars", "CRM", "Sheets", "Zapier/Make"].map((t) => (
+                <Badge key={t} variant="secondary" className="rounded-full">
+                  {t}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="md:col-span-5">
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-4 text-sm">
+              <div className="text-white/70">Example workflow</div>
+              <div className="mt-3 grid gap-2">
+                {["Form submitted", "AI qualifies lead", "SMS sent", "Call booked", "CRM updated"].map((x, i) => (
+                  <div key={x} className="flex items-center gap-3">
+                    <div className="grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-white/5 text-xs">
+                      {i + 1}
+                    </div>
+                    <div className="text-white/80">{x}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DemoSection() {
+  const [industry, setIndustry] = useState(industries[0].key);
+  const [tone, setTone] = useState("Direct");
+  const [includePricing, setIncludePricing] = useState(true);
+  const [urgent, setUrgent] = useState(false);
+
+  const selected = useMemo(
+    () => industries.find((i) => i.key === industry) || industries[0],
+    [industry]
+  );
+
+  const blueprint = useMemo(() => {
+    const base = [
+      { step: "Visitor asks a question", tool: "Website Chat" },
+      { step: "AI gathers details", tool: "Qualification Form" },
+      { step: "Lead score + route", tool: "CRM / Inbox" },
+      { step: "Offer booking slots", tool: "Calendar" },
+      { step: "Confirm + reminders", tool: "SMS/Email" },
+    ];
+    const addons = [];
+    if (includePricing) addons.push({ step: "Provide a ballpark range", tool: "Pricing Logic" });
+    if (urgent) addons.push({ step: "Escalate to on-call", tool: "Call / Pager" });
+    return [...base.slice(0, 2), ...addons, ...base.slice(2)];
+  }, [includePricing, urgent]);
+
+  return (
+    <section id="demo" className="mx-auto max-w-6xl px-4 py-16">
+      <div className="grid gap-8 md:grid-cols-12">
+        <div className="md:col-span-5">
+          <div className="text-xs uppercase tracking-wider text-white/60">Interactive demo</div>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+            Pick an industry. Watch the automation.
+          </h2>
+          <p className="mt-3 text-sm text-white/70">
+            This demo simulates how Vanguard AI qualifies a lead, responds instantly, and books appointments.
+          </p>
+
+          <div className="mt-6 grid gap-3">
+            <Card className="rounded-3xl border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle className="text-base">Demo settings</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <div className="grid gap-2">
+                  <div className="text-xs text-white/70">Industry</div>
+                  <Select value={industry} onValueChange={setIndustry}>
+                    <SelectTrigger className="rounded-2xl">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {industries.map((i) => (
+                        <SelectItem key={i.key} value={i.key}>
+                          {i.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-white/60">Example: {selected.example}</div>
+                </div>
+
+                <div className="grid gap-2">
+                  <div className="text-xs text-white/70">Response style</div>
+                  <div className="flex gap-2">
+                    {["Direct", "Friendly", "Premium"].map((t) => (
+                      <Button
+                        key={t}
+                        variant={tone === t ? "default" : "secondary"}
+                        className="rounded-2xl"
+                        onClick={() => setTone(t)}
+                      >
+                        {t}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator className="bg-white/10" />
+
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium">Include ballpark pricing</div>
+                    <div className="text-xs text-white/60">Improves qualification</div>
+                  </div>
+                  <Switch checked={includePricing} onCheckedChange={setIncludePricing} />
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium">Urgent escalation</div>
+                    <div className="text-xs text-white/60">Route to on-call instantly</div>
+                  </div>
+                  <Switch checked={urgent} onCheckedChange={setUrgent} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle className="text-base">Expected outcomes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid gap-2 text-sm text-white/80">
+                  {selected.outcomes.map((o) => (
+                    <li key={o} className="flex items-center gap-2">
+                      <Check className="h-4 w-4" /> {o}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="md:col-span-7">
+          <Tabs defaultValue="chat" className="w-full">
+            <TabsList className="rounded-2xl bg-white/5 border border-white/10">
+              <TabsTrigger value="chat" className="rounded-2xl">Chat demo</TabsTrigger>
+              <TabsTrigger value="workflow" className="rounded-2xl">Workflow</TabsTrigger>
+              <TabsTrigger value="handoff" className="rounded-2xl">Handoff</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="chat" className="mt-4">
+              <ChatSimulator industry={selected} tone={tone} includePricing={includePricing} urgent={urgent} />
+            </TabsContent>
+
+            <TabsContent value="workflow" className="mt-4">
+              <Card className="rounded-3xl border-white/10 bg-white/5">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Layers className="h-5 w-5" /> Automation Blueprint
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3">
+                    {blueprint.map((b, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.06 }}
+                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/40 p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="grid h-8 w-8 place-items-center rounded-full bg-white/5 border border-white/10 text-sm">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">{b.step}</div>
+                            <div className="text-xs text-white/60">{tone} tone • {selected.name}</div>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="rounded-full">
+                          {b.tool}
+                        </Badge>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="handoff" className="mt-4">
+              <HandoffPanel industry={selected} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function toneify(tone, text) {
+  if (tone === "Friendly") {
+    return text
+      .replaceAll("Please", "No worries —")
+      .replaceAll("Could you", "Can you")
+      .replaceAll("Thank you", "Thanks!");
+  }
+  if (tone === "Premium") {
+    return text
+      .replaceAll("Thanks", "Appreciate it")
+      .replaceAll("No worries", "Absolutely")
+      .replaceAll("can", "may");
+  }
+  return text;
+}
+
+function ChatSimulator({ industry, tone, includePricing, urgent }) {
+  const containerRef = useRef(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [need, setNeed] = useState("");
+  const [messages, setMessages] = useState(() => [
+    {
+      role: "bot",
+      text: `Hi — I’m the ${BRAND_NAME} assistant. What can I help you with today?`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    },
+  ]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, busy]);
+
+  const botScript = useMemo(() => {
+    const base = {
+      intro:
+        `Got it. For ${industry.name.toLowerCase()}, I can help you get a quick answer and book a time.`,
+      q1: "What’s the best number to text you if we need to confirm details?",
+      q2: "What’s your name?",
+      q3: `Briefly, what do you need help with? (e.g., ${industry.example})`,
+      pricing:
+        "Based on what you shared, a ballpark range is $X–$Y. Exact pricing depends on scope and photos. Want the next available appointment times?",
+      book:
+        "Perfect — I can book you. Do you prefer morning or afternoon?",
+      urgent:
+        "This sounds urgent. I can escalate to the on-call tech right now. Are you safe, and what’s the address?",
+      close:
+        "All set. I’ll text a confirmation and a reminder before your appointment. Anything else you want to add?",
+    };
+
+    // Keep it demo-safe and generic
+    let pricing = base.pricing;
+    if (industry.key === "home") pricing = "Based on what you shared, a ballpark visit + diagnosis is typically $99–$189. Repairs vary. Want the next available appointment times?";
+    if (industry.key === "health") pricing = "A ballpark first-visit + evaluation is often $99–$225 depending on insurance. Want the next available appointment times?";
+    if (industry.key === "legal") pricing = "For many consults, a ballpark is $0–$250 depending on case type. Want the next available consultation times?";
+    if (industry.key === "realestate") pricing = "No cost to chat. If you’d like, I can book a quick call to learn your goals and timeline. Want the next available times?";
+    if (industry.key === "ecom") pricing = "No worries — I can help. Want order status, a return, or to talk to support?";
+
+    return {
+      ...base,
+      intro: toneify(tone, base.intro),
+      q1: toneify(tone, base.q1),
+      q2: toneify(tone, base.q2),
+      q3: toneify(tone, base.q3),
+      pricing: toneify(tone, pricing),
+      book: toneify(tone, base.book),
+      urgent: toneify(tone, base.urgent),
+      close: toneify(tone, base.close),
+    };
+  }, [industry, tone]);
+
+  const stage = useMemo(() => {
+    const userMsgs = messages.filter((m) => m.role === "user").length;
+    // 0 = ask phone, 1 = ask name, 2 = ask need, 3 = pricing/booking, 4 = close
+    return Math.min(userMsgs, 4);
+  }, [messages]);
+
+  const promptText = useMemo(() => {
+    if (stage === 0) return botScript.q1;
+    if (stage === 1) return botScript.q2;
+    if (stage === 2) return botScript.q3;
+    if (stage === 3) {
+      if (urgent) return botScript.urgent;
+      return includePricing ? botScript.pricing : botScript.book;
+    }
+    return botScript.close;
+  }, [stage, botScript, includePricing, urgent]);
+
+  const canSend = useMemo(() => {
+    if (busy) return false;
+    if (stage === 0) return phone.trim().length >= 7;
+    if (stage === 1) return name.trim().length >= 2;
+    if (stage === 2) return need.trim().length >= 4;
+    if (stage >= 3) return true;
+    return false;
+  }, [busy, stage, phone, name, need]);
+
+  const send = async () => {
+    if (!canSend) return;
+
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const userText = stage === 0 ? phone : stage === 1 ? name : stage === 2 ? need : "Yes, show times";
+
+    setMessages((m) => [...m, { role: "user", text: userText, time: now }]);
+    setBusy(true);
+
+    // Simulated processing delay
+    await new Promise((r) => setTimeout(r, 550));
+
+    const botNow = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const reply = stage === 0 ? botScript.q2 : stage === 1 ? botScript.q3 : stage === 2 ? promptText : promptText;
+
+    // For stage 3, add "available times" mock
+    const followUp = stage === 2
+      ? (urgent
+          ? "If you want, reply with your address and I’ll alert the on-call person immediately."
+          : "Here are 3 available times: Today 4:30pm • Tomorrow 9:40am • Tomorrow 2:10pm")
+      : stage === 3
+        ? "Booked. You’ll receive a confirmation text in a moment."
+        : null;
+
+    setMessages((m) => [...m, { role: "bot", text: reply, time: botNow }, ...(followUp ? [{ role: "bot", text: followUp, time: botNow }] : [])]);
+    setBusy(false);
+  };
+
+  const reset = () => {
+    setName("");
+    setPhone("");
+    setNeed("");
+    setBusy(false);
+    setMessages([
+      {
+        role: "bot",
+        text: `Hi — I’m the ${BRAND_NAME} assistant. What can I help you with today?`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+      { role: "bot", text: botScript.intro, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+    ]);
+  };
+
+  useEffect(() => {
+    // When industry/tone changes, refresh intro but keep chat
+    setMessages((prev) => {
+      if (!prev.length) return prev;
+      const updated = [...prev];
+      // only update the very first bot message
+      updated[0] = { ...updated[0], text: `Hi — I’m the ${BRAND_NAME} assistant. What can I help you with today?` };
+      return updated;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [industry.key, tone]);
+
+  return (
+    <Card className="rounded-3xl border-white/10 bg-white/5">
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="text-base flex items-center gap-2">
+          <MessageCircle className="h-5 w-5" /> Chat Simulator
+        </CardTitle>
+        <Button variant="secondary" className="rounded-2xl" onClick={reset}>
+          Reset
+        </Button>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div
+          ref={containerRef}
+          className="h-[360px] overflow-auto rounded-2xl border border-white/10 bg-black/40 p-4"
+        >
+          <div className="grid gap-3">
+            {messages.map((m, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "max-w-[85%] rounded-2xl px-3 py-2 text-sm border",
+                  m.role === "user"
+                    ? "ml-auto bg-white/10 border-white/10"
+                    : "bg-black/30 border-white/10"
+                )}
+              >
+                <div className="text-white/90">{m.text}</div>
+                <div className="mt-1 text-[10px] text-white/50">{m.time}</div>
+              </div>
+            ))}
+            {busy && (
+              <div className="max-w-[70%] rounded-2xl px-3 py-2 text-sm border bg-black/30 border-white/10">
+                <div className="text-white/70">Typing…</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-12">
+          <div className="md:col-span-4 grid gap-2">
+            <div className="text-xs text-white/60">Phone</div>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="(555) 555-5555"
+              className="rounded-2xl"
+            />
+          </div>
+          <div className="md:col-span-4 grid gap-2">
+            <div className="text-xs text-white/60">Name</div>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Alex"
+              className="rounded-2xl"
+            />
+          </div>
+          <div className="md:col-span-4 grid gap-2">
+            <div className="text-xs text-white/60">Need</div>
+            <Input
+              value={need}
+              onChange={(e) => setNeed(e.target.value)}
+              placeholder="I need…"
+              className="rounded-2xl"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-white/60">
+            Next prompt: <span className="text-white/80">{promptText}</span>
+          </div>
+          <Button className="rounded-2xl" onClick={send} disabled={!canSend}>
+            Send <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HandoffPanel({ industry }) {
+  const { copied, copy } = useCopyToClipboard();
+
+  const sample = useMemo(() => {
+    return {
+      lead: {
+        name: "Alex Rivera",
+        phone: "+1 (555) 012-9844",
+        email: "alex@example.com",
+        source: "Website Chat",
+        industry: industry.name,
+        intent: "Wants pricing + schedule",
+        urgency: "Normal",
+        score: 82,
+      },
+      summary:
+        "Lead asked about availability and ballpark pricing. Provided range and offered 3 times. Lead selected tomorrow morning.",
+      next_steps: [
+        "Create/Update contact in CRM",
+        "Create deal in pipeline: New Lead",
+        "Send confirmation SMS + intake link",
+        "Assign to sales/office manager",
+      ],
+    };
+  }, [industry.name]);
+
+  const json = useMemo(() => JSON.stringify(sample, null, 2), [sample]);
+
+  return (
+    <Card className="rounded-3xl border-white/10 bg-white/5">
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="text-base flex items-center gap-2">
+          <FileText className="h-5 w-5" /> CRM Handoff Payload
+        </CardTitle>
+        <Button
+          variant="secondary"
+          className="rounded-2xl"
+          onClick={() => copy(json)}
+        >
+          <ClipboardCopy className="mr-2 h-4 w-4" /> {copied ? "Copied" : "Copy JSON"}
+        </Button>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+          <pre className="whitespace-pre-wrap text-xs text-white/80 leading-relaxed">{json}</pre>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {["Sales gets context", "No lead left behind", "Audit trail"].map((t) => (
+            <div
+              key={t}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
+              <div className="text-sm font-medium">{t}</div>
+              <div className="mt-1 text-xs text-white/65">
+                Transcripts, scores, and fields map cleanly into your CRM.
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Pricing({ onScrollTo }) {
+  return (
+    <section id="pricing" className="mx-auto max-w-6xl px-4 py-16">
+      <div className="text-center">
+        <div className="text-xs uppercase tracking-wider text-white/60">Pricing</div>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+          Simple packages. High-ticket outcomes.
+        </h2>
+        <p className="mt-3 text-sm text-white/70 max-w-2xl mx-auto">
+          Choose the build that gets you booked calls and consistent follow-up.
+        </p>
+      </div>
+
+      <div className="mt-10 grid gap-4 md:grid-cols-3">
+        {packages.map((p) => (
+          <Card
+            key={p.name}
+            className={cn(
+              "rounded-3xl border-white/10 bg-white/5",
+              p.featured && "border-white/25 bg-white/10"
+            )}
+          >
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">{p.name}</CardTitle>
+                  <div className="text-xs text-white/60">{p.subtitle}</div>
+                </div>
+                {p.featured && (
+                  <Badge className="rounded-full" variant="secondary">
+                    Most Popular
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-4">
+                <div className="text-3xl font-semibold">
+                  {p.price}
+                  {p.period ? <span className="text-sm font-normal text-white/60"> / {p.period}</span> : null}
+                </div>
+                <div className="mt-1 text-xs text-white/60">
+                  *Ongoing support available
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ul className="grid gap-2 text-sm text-white/80">
+                {p.bullets.map((b) => (
+                  <li key={b} className="flex items-center gap-2">
+                    <Check className="h-4 w-4" /> {b}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                className={cn("mt-6 w-full rounded-2xl", p.featured ? "" : "")}
+                variant={p.featured ? "default" : "secondary"}
+                onClick={() => onScrollTo("cta")}
+              >
+                {p.cta} <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="mt-8 text-center text-xs text-white/60">
+        Want us to match a competitor’s quote? We’ll scope it and tell you the truth.
+      </div>
+    </section>
+  );
+}
+
+function PartnerPacket() {
+  const generatePDF = () => {
+    const content = `Vanguard Automation Group — Partner Offers
+
+` +
+      packages
+        .map((p) => {
+          return `${p.name} — ${p.price} (${p.period})
+${p.subtitle}
+` +
+            p.bullets.map((b) => `• ${b}`).join("
+");
+        })
+        .join("
+
+-----------------------
+
+") +
+      `
+
+Delivery:
+Launch: 48 hours
+Growth: 3–5 days
+Scale: 5–7 days`;
+
+    const win = window.open("", "_blank");
+    win.document.write(`
+      <html>
+        <head>
+          <title>Vanguard Automation Group - Partner Offers</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.5; }
+            h1 { margin-bottom: 20px; }
+            pre { white-space: pre-wrap; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <h1>Vanguard Automation Group — Partner Offers</h1>
+          <pre>${content}</pre>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+  const { copied, copy } = useCopyToClipboard(1400);
+
+  const offersMarkdown = useMemo(() => {
+    const rows = packages
+      .map((p) => {
+        const bullets = p.bullets.map((b) => `- ${b}`).join("
+");
+        return `### ${p.name} — ${p.price} (${p.period})
+${p.subtitle}
+
+${bullets}`;
+      })
+      .join("
+
+---
+
+");
+
+    return `# ${BRAND_NAME} — Offers (Partner Copy)
+
+${rows}
+
+---
+
+## Delivery Notes
+- Turnaround: Launch 48 hours • Growth 3–5 days • Scale 5–7 days
+- Access needed: website/embed, email/SMS provider (or Twilio), calendar link, optional CRM
+- Scope control: extra workflows billed separately or moved to next tier
+`;
+  }, []);
+
+  const partnerOnePager = useMemo(() => {
+    return {
+      brand: BRAND_NAME,
+      offers: packages.map((p) => ({
+        name: p.name,
+        price: p.price,
+        billing: p.period,
+        headline: p.subtitle,
+        includes: p.bullets,
+      })),
+      delivery: {
+        launch: "48 hours",
+        growth: "3–5 days",
+        scale: "5–7 days",
+      },
+      positioning:
+        "Productized automation packages for small businesses: lead capture, follow-up, booking, and CRM handoff.",
+      note:
+        "This is a demo one-pager payload you can paste into docs, email, or a proposal builder.",
+    };
+  }, []);
+
+  const partnerJson = useMemo(() => JSON.stringify(partnerOnePager, null, 2), []);
+
+  return (
+    <section id="partners" className="mx-auto max-w-6xl px-4 py-16">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-wider text-white/60">Partners</div>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+            Extractable offers for your business partners
+          </h2>
+          <p className="mt-3 text-sm text-white/70 max-w-2xl">
+            Copy the one-pager (Markdown) or the structured JSON and drop it into a doc, email, or proposal.
+          </p>
+        </div>
+        <div className="hidden md:flex gap-2">
+          <Button variant="secondary" className="rounded-2xl" onClick={() => copy(offersMarkdown)}>
+            <ClipboardCopy className="mr-2 h-4 w-4" /> {copied ? "Copied" : "Copy One-Pager"}
+          </Button>
+          <Button variant="secondary" className="rounded-2xl" onClick={() => copy(partnerJson)}>
+            <ClipboardCopy className="mr-2 h-4 w-4" /> Copy JSON
+          </Button>
+          <Button variant="secondary" className="rounded-2xl" onClick={generatePDF}>
+            <FileText className="mr-2 h-4 w-4" /> Download PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-12">
+        <Card className="rounded-3xl border-white/10 bg-white/5 md:col-span-7">
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-5 w-5" /> Partner One-Pager (Markdown)
+            </CardTitle>
+            <Button variant="secondary" className="rounded-2xl md:hidden" onClick={() => copy(offersMarkdown)}>
+              <ClipboardCopy className="mr-2 h-4 w-4" /> {copied ? "Copied" : "Copy"}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+              <pre className="whitespace-pre-wrap text-xs text-white/80 leading-relaxed">{offersMarkdown}</pre>
+            </div>
+            <div className="mt-3 text-[11px] text-white/55">
+              Tip: paste into Google Docs/Notion. Headings and bullets will format clean.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-3xl border-white/10 bg-white/5 md:col-span-5">
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="h-5 w-5" /> One-Pager (JSON)
+            </CardTitle>
+            <Button variant="secondary" className="rounded-2xl" onClick={() => copy(partnerJson)}>
+              <ClipboardCopy className="mr-2 h-4 w-4" /> Copy
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+              <pre className="whitespace-pre-wrap text-xs text-white/80 leading-relaxed">{partnerJson}</pre>
+            </div>
+            <div className="grid gap-3">
+              {[
+                { t: "Use in proposals", d: "Paste into a proposal builder or prompt an AI to format it." },
+                { t: "Scope clarity", d: "Bullets are the scope; anything else is an upsell or next tier." },
+                { t: "Fast handoff", d: "Partners can reuse this across industries without rewriting." },
+              ].map((x) => (
+                <div key={x.t} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-sm font-medium">{x.t}</div>
+                  <div className="mt-1 text-xs text-white/65">{x.d}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
+function CTA() {
+  return (
+    <section id="cta" className="mx-auto max-w-6xl px-4 py-16">
+      <div className="rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/10 to-white/5 p-6 md:p-10">
+        <div className="grid gap-8 md:grid-cols-12 md:items-center">
+          <div className="md:col-span-7">
+            <div className="text-xs uppercase tracking-wider text-white/60">Book a demo</div>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+              Want Vanguard Automation Group installed on your site this week?
+            </h2>
+            <p className="mt-3 text-sm text-white/70">
+              We’ll build your workflow map, write the follow-up sequences, and deploy the widget.
+            </p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {["Lead capture", "SMS follow-up", "Booking", "CRM handoff", "Reporting"].map((x) => (
+                <Badge key={x} variant="secondary" className="rounded-full">
+                  {x}
+                </Badge>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button className="rounded-2xl" asChild>
+                <a href={BOOKING_URL} target="_blank" rel="noreferrer">
+                  Book a call <Calendar className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+              <Button variant="secondary" className="rounded-2xl" asChild>
+                <a href={`mailto:${CTA_EMAIL}`}>
+                  Email us <Mail className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+              <Button variant="ghost" className="rounded-2xl text-white/85" asChild>
+                <a href="#demo">
+                  Try the demo again <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          <div className="md:col-span-5">
+            <LeadForm />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LeadForm() {
+  const [status, setStatus] = useState("idle");
+  const [form, setForm] = useState({ name: "", email: "", phone: "", website: "", notes: "" });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    // Simulate send; replace with your form endpoint
+    await new Promise((r) => setTimeout(r, 700));
+    setStatus("sent");
+  };
+
+  return (
+    <Card className="rounded-3xl border-white/10 bg-black/30">
+      <CardHeader>
+        <CardTitle className="text-base">Get a build plan</CardTitle>
+        <div className="text-xs text-white/60">We’ll reply with a workflow map + next steps.</div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="grid gap-3">
+          <div className="grid gap-2">
+            <div className="text-xs text-white/60">Name</div>
+            <Input
+              className="rounded-2xl"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Your name"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="text-xs text-white/60">Email</div>
+            <Input
+              className="rounded-2xl"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              placeholder="you@company.com"
+              type="email"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="text-xs text-white/60">Phone</div>
+            <Input
+              className="rounded-2xl"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              placeholder="(555) 555-5555"
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="text-xs text-white/60">Website</div>
+            <Input
+              className="rounded-2xl"
+              value={form.website}
+              onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+              placeholder="https://"
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="text-xs text-white/60">What do you want automated?</div>
+            <Textarea
+              className="rounded-2xl"
+              value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Lead capture, missed calls, booking, follow-ups…"
+              rows={4}
+            />
+          </div>
+
+          <Button className="rounded-2xl" type="submit" disabled={status !== "idle"}>
+            {status === "idle" ? (
+              <>
+                Send <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            ) : status === "sending" ? (
+              "Sending…"
+            ) : (
+              "Sent ✅"
+            )}
+          </Button>
+
+          <div className="text-[11px] text-white/55">
+            Demo form only — connect to your endpoint (Formspree, Tally, or a serverless function) for production.
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FAQ() {
+  const [open, setOpen] = useState(0);
+  return (
+    <section id="faq" className="mx-auto max-w-6xl px-4 py-16">
+      <div className="text-center">
+        <div className="text-xs uppercase tracking-wider text-white/60">FAQ</div>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+          Questions — answered.
+        </h2>
+      </div>
+
+      <div className="mt-10 grid gap-4 md:grid-cols-2">
+        {faqs.map((f, i) => (
+          <button
+            key={f.q}
+            onClick={() => setOpen(i)}
+            className={cn(
+              "text-left rounded-3xl border border-white/10 bg-white/5 p-6 transition",
+              open === i && "bg-white/10"
+            )}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="font-medium">{f.q}</div>
+                <div className={cn("mt-2 text-sm text-white/70", open !== i && "line-clamp-2")}>
+                  {f.a}
+                </div>
+              </div>
+              <ChevronDown className={cn("h-5 w-5 shrink-0 transition", open === i && "rotate-180")} />
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="border-t border-white/10 bg-black/40">
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        <div className="grid gap-6 md:grid-cols-12">
+          <div className="md:col-span-6">
+            <div className="flex items-center gap-2">
+              <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 border border-white/10">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">{BRAND_NAME}</div>
+                <div className="text-xs text-white/60">Automation for high-ticket service businesses</div>
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-white/60">
+              © {new Date().getFullYear()} {BRAND_NAME}. Demo site template.
+            </div>
+          </div>
+          <div className="md:col-span-6 grid gap-3 md:justify-items-end">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="rounded-full"><Phone className="mr-1 h-3 w-3" /> Call-ready leads</Badge>
+              <Badge variant="secondary" className="rounded-full"><MessageCircle className="mr-1 h-3 w-3" /> Instant follow-up</Badge>
+              <Badge variant="secondary" className="rounded-full"><Shield className="mr-1 h-3 w-3" /> Guardrails</Badge>
+            </div>
+            <div className="text-xs text-white/60">
+              Contact: <a className="underline" href={`mailto:${CTA_EMAIL}`}>{CTA_EMAIL}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export default function VanguardAIDemoSite() {
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <TopNav onScrollTo={scrollTo} />
+      <Hero onScrollTo={scrollTo} />
+      <HowItWorks />
+      <DemoSection />
+      <Pricing onScrollTo={scrollTo} />
+      <PartnerPacket />
+      <CTA />
+      <FAQ />
+      <Footer />
+    </div>
+  );
+}
